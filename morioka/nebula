@@ -1,0 +1,161 @@
+#nebulaでChIP-seq解析
+
+ChIP-seqコースの方のページです。ChIP-seq解析をnebulaで実施していただきます。時間の関係上手順1,3,4,7番は今回おそらく実習しませんが、余裕のある方はご参照ください。
+
+- [nebula](http://nebula.curie.fr/)
+
+
+
+## 内容の順番
+前回資料も含めた内容へのリンクになります。
+
+
+1. [NCBIからのデータのダウンロード方法など](https://github.com/suimye/NGS_handson2015/wiki/data_retrive)
+2. [neblaアカウントの作成と下準備](#neblaAccount)
+3. [fastqc（ただしlinux環境を利用した説明）](https://github.com/suimye/NGS_handson2015/wiki/NGS_beginner)
+4. [mapping結果の統計](#maq)
+5. [PeakCall](#PeakCalling)
+6. [PeakAnnotation](#PeakAnnotation)
+7. [motif discovery analysis&TFBS search](https://github.com/suimye/NGS_handson2015/wiki/PeakCallAndMDA)
+8. [データの可視化](https://github.com/suimye/NGS_handson2015/wiki/ChIP-seq%E3%83%87%E3%83%BC%E3%82%BF%E3%81%AE%E5%8F%AF%E8%A6%96%E5%8C%96)
+
+
+
+## 2. <a name="neblaAccount">neblaアカウントの作成と下準備</a>
+
+#### まずはneblaアカウントを作ります。nebulaにアクセスして、画像に従って、アカウントを作成してください。右上の「User」をクリックして、「Register」をクリックします。Emailアドレス、パスワード、名前を入力してから「Submit」をクリックします。そのままlogin Home(だったっけかな)をクリックして、作成したアカウントでログインします。
+
+[nebula](http://nebula.curie.fr/)
+
+[![https://gyazo.com/665ee31e34181fb2337790a48f68c7c5](https://i.gyazo.com/665ee31e34181fb2337790a48f68c7c5.png)](https://gyazo.com/665ee31e34181fb2337790a48f68c7c5)
+
+#### 2.1. mapping済みデータをインポートする
+
+今回はmapping処理は時間がかかるので省略します（mappingについては他の項目をごらん下さい）。まず、新しいヒストリーを作成します。ヒストリーの横にあるオプション-> CreateNewを選択し、さらにUnnamed Historyと書かれている所をワンクリックして、"tutorial"という名前をつけて、**enterキー**を押してください。このtutorialフォルダにデータをインポートしたいと思います。
+
+
+[![https://gyazo.com/250d42f8a386a589987e0305fcaddc34](https://i.gyazo.com/250d42f8a386a589987e0305fcaddc34.png)](https://gyazo.com/250d42f8a386a589987e0305fcaddc34)
+
+
+#### 2.2. 公開済みの共有データにアクセスする。
+[こちらのページ](http://nebula.curie.fr/u/suimye/h/suimyetutorialajacs2016)をクリックして、右上の**import history**をクリック、さらに**start using this history**をクリックしてください。
+
+
+[![https://gyazo.com/0bf88cd9590690ce6fe535e240e68dc9](https://i.gyazo.com/0bf88cd9590690ce6fe535e240e68dc9.png)](https://gyazo.com/0bf88cd9590690ce6fe535e240e68dc9)
+
+import historyを押した後・・・
+
+[![https://gyazo.com/0e6adbdd8edd9fac9326b1ef5d9c3aa6](https://i.gyazo.com/0e6adbdd8edd9fac9326b1ef5d9c3aa6.png)](https://gyazo.com/0e6adbdd8edd9fac9326b1ef5d9c3aa6)
+start using this historyをクリック
+
+
+#### 2.3. sam to bam変換
+左のツール欄にあるSAMToolsを使って、bamファイルへ変換します。NGS:SAMTools->SAM-to-BAMを選択します。**type of exerimentは、出力ファイル名となります**ので、それぞれ、tap_pax7.chr19などsamファイルと**同じような名前を入力してください。**最後にexecuteを押してください。続けて、同じ操作でCtrl.chr19.samにこの処理を行ってください。処理が正常に終了すると、右のhistoryにグリーンで表示されます。
+###### （type of exerimentを入力し忘れた場合も変換後にファイル名を変更することができます)。
+[![https://gyazo.com/d9caea4d9d1ce6c441f6d9057d0c44d9](https://i.gyazo.com/d9caea4d9d1ce6c441f6d9057d0c44d9.png)](https://gyazo.com/d9caea4d9d1ce6c441f6d9057d0c44d9)
+
+#### 2.4. baiファイルとbamファイルをダウンロードしておく
+後ほど、IGVでbamファイルを観てみようと思いますので、ダウンロードします。右のhistoryからbamファイルのファイル名をクリックしてください。クリックした中にフロッピーディスクのマークがありますので、その右横のボタンをクリックします。**Download Dataset**, **Download bam_index**が出てきますので、両方実施してください。後ほどIGVの使い方で利用します。
+
+
+
+
+[![https://gyazo.com/2a418ef68837dd89d7f2c7fd4fc50973](https://i.gyazo.com/2a418ef68837dd89d7f2c7fd4fc50973.png)](https://gyazo.com/2a418ef68837dd89d7f2c7fd4fc50973)
+
+
+
+## <a name="#maq">3. mapping結果の統計情報をみる</a>
+
+SAMToolsのflagstatはSAM flagを参照して、mappingされたか否か、paired endの両方のreadがちゃんとmappingされたかなどを調べることができる。SAMTools -> flagstatをクリックし、ファイルを選び実行してみてください。実行結果は、右のhistoryに **flagstat on data~**というtxtファイルがグリーンで表示される。そのファイル名をくりっくすると、下図のように白い欄に内約がでてくる。duplicateの状況や、mapped qualityの状況を確認しながら、必要であれば**SAMToolsのFilter BAM**を使って、filteringを考える。ChIP-seqのMAQ（マッピングクオリティ）は、場合によるが>20-25ぐらいを設定している論文が多い。
+
+
+[![https://gyazo.com/f15def536a9e749c75c8e866b1865ac1](https://i.gyazo.com/f15def536a9e749c75c8e866b1865ac1.png)](https://gyazo.com/f15def536a9e749c75c8e866b1865ac1)
+
+##  <a name="PeakCalling">PeakCalling</a>
+readの山を検出するアルゴリズムを用いて、抗体によって濃縮された領域を決定する。今回は、転写因子の結合解析に広く利用されているMACSを利用する。PeakCalling->MACSを選択する。
+
+- experiment name: pax7_macs
+- Paired end sequencing:Single end
+- ChIP-seq Tag file: tap_pax7.chr19.BAM
+- ChIP-Seq Control File: Ctrl.chr19.BAM
+- **Effective genome size**: 1.87e+9
+- Tag size: 36
+- Band width: 300
+- pvalue:1e-05
+- mfold: 10,100
+
+###### あとの設定はdefaultで
+
+Peak Callが終了し、成功すれば下図のようにグリーン表示になっているはずです。各ファイルをクリックして、どんな内容が書かれてありそうかcheckしてみてください。また、先ほどのダウンロードの要領で、BEDファイルをダウンロードしてください。
+
+- interval: 中間ファイル。解析途中で産出した、sample, controlのmfoldや、tagの数、p-valueなどの情報がつまっている。peak.bedよりも情報が多く、他の解析などでこれらの情報が必要になるケースはよくあるので、ちゃんと保存しておく。
+
+- peak.bed: 今回の解析結果として、sampleにおいて、ctrlよりも有意に山が検出された領域をbed形式で出力してくれている。
+
+[![https://gyazo.com/71b29d24a3c5cb8ca9958bc9f3cd4ee5](https://i.gyazo.com/71b29d24a3c5cb8ca9958bc9f3cd4ee5.png)](https://gyazo.com/71b29d24a3c5cb8ca9958bc9f3cd4ee5)
+
+
+html reportの目のマークをクリックすると今回の解析内容を閲覧することができます。
+
+[![https://gyazo.com/ee2096d443aaf7f406aaaabe7a1de7f8](https://i.gyazo.com/ee2096d443aaf7f406aaaabe7a1de7f8.png)](https://gyazo.com/ee2096d443aaf7f406aaaabe7a1de7f8)
+
+講義で説明したmacsが本解析でしっかりとモデルにあったデザインになっているか、また**summits.bed**ファイルは、peak callingの結果、転写因子などのDNA結合タンパク質がプロテクトしている領域の中心を出力してくれています。５番で利用するのでDLしておきます。
+
+[![https://gyazo.com/60f2ebfd374786b7c8a14ec20d23d82c](https://i.gyazo.com/60f2ebfd374786b7c8a14ec20d23d82c.png)](https://gyazo.com/60f2ebfd374786b7c8a14ec20d23d82c)
+
+
+
+
+## <a name="5. PeakAnnotation">Peakのデータと遺伝子注釈の統合</a>
+
+genomic annotation解析。nebula以外ではGUIでできる環境は少ないので、是非利用してみよう。以下の4つの解析を紹介する。
+
+
+1. 全ゲノムのTSS周りでのTFの分布状況を調べる
+2. みつかったpeakがゲノムのどこにmappingされたかを調べる。
+3. ゲノム上の距離の関係で遺伝子-転写因子の関係導き出す。
+4. RNA-seqのデータとChIP-seqデータ結合させて解析する事もできる（今回は省略）。
+
+
+#### 1. peak distribution on TSS
+
+- ダウンロードしたMACS_in_Galaxy_summits.bedをデスクトップなどに置き、GetData->UploadFIlesを選択する。**MACS_in_Galaxy_summits.bed**をuploadする。FileFormatはbed、Fileを選択して、Genome欄には**mm10を入力、enter**を押して、excuteで実行。
+- Uploadが完了したら、右のリストの中にあるNGS:PeakAnnotationを選択する。 **Get peak distribution around TSS (Transcription factors)**を選択する。
+
+	- MACS_in_Galaxy_summits.bedを選択
+	- Step (bp)	200
+	- length of the region +-TSS: 10000
+	- organism: mouse
+	- mm10
+
+
+
+[![https://gyazo.com/8d5671caff8d2874923ea7bdf916fbe2](https://i.gyazo.com/8d5671caff8d2874923ea7bdf916fbe2.png)](https://gyazo.com/8d5671caff8d2874923ea7bdf916fbe2)
+
+
+peak call後の領域はTSS上流に比較的多いことがわかる。
+
+
+#### 2と3 Peak genomic annotation解析
+
+- **Genomic annotation of Chip-Seq peaks**を選択
+- ChIP peaksとして、MACS on data (peaks:bed)を選択
+- control dataはこの時は必要ない（Ctrlと比較して有意なpeakをとっているため）。
+- mouse, mm9 pdfを生成するにcheck. あとはデフォルト。
+- Execute
+
+[![https://gyazo.com/13643b83ec74dbb66f27a9b1b59e410a](https://i.gyazo.com/13643b83ec74dbb66f27a9b1b59e410a.png)](https://gyazo.com/13643b83ec74dbb66f27a9b1b59e410a)
+
+**Annotated Peaks**と、**.LOG for Annotated Peaks**がhistoryに現れる。LOGのヒストリーにある**目のマーク**を選択すると、下図のように、ゲノムのどの領域にpeakがみつかったかの一覧をみることができる。
+
+[![https://gyazo.com/d1979fa69f63c9777d0db98c4a1cbd3e](https://i.gyazo.com/d1979fa69f63c9777d0db98c4a1cbd3e.png)](https://gyazo.com/d1979fa69f63c9777d0db98c4a1cbd3e)
+
+
+
+Annotated Peaksは、遺伝子-転写因子の情報が得られるので、ダウンロードして、拡張子を.txtなどに変更してexcelでみてみよう。ｶｴﾙ氏は、excelを開くと蕁麻疹がでるので省略。
+
+[![https://gyazo.com/ab99c6b6097bc39e2687de4bdf0b3ffc](https://i.gyazo.com/ab99c6b6097bc39e2687de4bdf0b3ffc.png)](https://gyazo.com/ab99c6b6097bc39e2687de4bdf0b3ffc)
+
+## motif discovery analysis
+
+転写因子の解析といえば、転写因子結合モチーフの発見とその検索がある。解析方法については、[以前のAJACSのページ、4つめの解析](https://github.com/suimye/NGS_handson2015/wiki/PeakCallAndMDA)を参照してください。
